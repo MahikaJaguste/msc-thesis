@@ -3,8 +3,7 @@
 ### Setting up environment
 
 ```
-pipenv shell
-pipenv install
+conda env create -f env.yml
 ```
 
 ### Code Structure
