@@ -2,7 +2,7 @@ from graspologic.partition import hierarchical_leiden
 import pandas as pd
 import os
 
-def hierarchical_leiden_communities(G, max_cluster_size=100, random_state=None):
+def hierarchical_leiden_communities(G, max_cluster_size=100, random_state=None, resolution=1):
     """
     Run hierarchical Leiden community detection on a graph.
     Returns:
@@ -10,7 +10,7 @@ def hierarchical_leiden_communities(G, max_cluster_size=100, random_state=None):
         - parent_mapping: dict[level][community_id] = parent_community_id
         - levels: sorted list of levels
     """
-    partitions = hierarchical_leiden(G, max_cluster_size=max_cluster_size, random_seed=random_state)
+    partitions = hierarchical_leiden(G, max_cluster_size=max_cluster_size, random_seed=random_state, resolution=resolution)
     node_to_community = {}
     parent_mapping = {}
     for part in partitions:

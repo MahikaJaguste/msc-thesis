@@ -6,6 +6,7 @@ from leiden_community import leiden_communities
 from leiden_hierarchical_community import hierarchical_leiden_communities
 from louvain_community import louvain_communities
 from asyn_lpa_community import asyn_lpa_communities
+from hybrid_lpa_leiden_community import hybrid_lpa_leiden_communities
 from evaluation import print_level_evaluations
 
 
@@ -19,10 +20,11 @@ def main():
     G, node_to_id, id_to_node = build_graph_from_triplets(triplet_df, directed=False)
     print(f"Graph has {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
 
-    # mode = "leiden-hierarchical"
+    mode = "leiden-hierarchical"
     # mode = "louvain"
     # mode = "leiden"
-    mode = "asyn-lpa"  # Change this to test different community detection methods
+    # mode = "asyn-lpa"  
+    # mode = "hybrid-lpa-leiden"
 
     if mode == "leiden-hierarchical":
         print("Running hierarchical Leiden community detection...")
@@ -37,7 +39,10 @@ def main():
     elif mode == "asyn-lpa":
         print("Running Async Label Propagation community detection...")
         community_df, parent_df, levels = asyn_lpa_communities(G)
-    
+    elif mode == "hybrid-lpa-leiden":
+        print("Running Hybrid LPA-Leiden community detection...")
+        community_df, parent_df, levels = hybrid_lpa_leiden_communities(G, max_cluster_size=10, random_state=42)
+        
     
     for level in levels:
         print(f"Level {level}: {(community_df[community_df['level'] == level]['community_id']).nunique()} communities")

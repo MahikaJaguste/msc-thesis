@@ -37,8 +37,8 @@ def build_graph_from_triplets(triplet_df, directed=False):
     print()
     G = nx.DiGraph() if directed else nx.Graph()
     for _, row in triplet_df.iterrows():
-        s = node_to_id[row['subject']]
-        o = node_to_id[row['object']]
+        s = str(node_to_id[row['subject']])
+        o = str(node_to_id[row['object']])
         G.add_node(s, name=row['subject'], type=row['subject_type'])
         G.add_node(o, name=row['object'], type=row['object_type'])
         G.add_edge(s, o, predicate=row['predicate'])
