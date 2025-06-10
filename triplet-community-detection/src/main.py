@@ -2,8 +2,11 @@ import os
 
 from io_utils import load_triplets_csv
 from graph_utils import build_graph_from_triplets
-from leiden_community import hierarchical_leiden_communities
-from evaluation import leiden_modularity, print_community_stats
+from leiden_community import leiden_communities
+from leiden_hierarchical_community import hierarchical_leiden_communities
+from louvain_community import louvain_communities
+from evaluation import print_level_evaluations
+
 
 def main():
 
@@ -15,16 +18,28 @@ def main():
     G, node_to_id, id_to_node = build_graph_from_triplets(triplet_df, directed=False)
     print(f"Graph has {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
 
-    # Hierarchical Leiden community detection
-    community_df, parent_df, levels = hierarchical_leiden_communities(G, max_cluster_size=100, random_state=42)
+    # mode = "leiden-hierarchical"
+    # mode = "louvain"
+    mode = "leiden"
+
+    if mode == "leiden-hierarchical":
+        print("Running hierarchical Leiden community detection...")
+        # Hierarchical Leiden community detection
+        community_df, parent_df, levels = hierarchical_leiden_communities(G, max_cluster_size=10, random_state=42)
+    elif mode == "louvain":
+        print("Running Louvain community detection...")
+        community_df, parent_df, levels = louvain_communities(G)
+    elif mode == "leiden":
+        print("Running Leiden community detection...")
+        community_df, parent_df, levels = leiden_communities(G)
+    
+    
     for level in levels:
         print(f"Level {level}: {(community_df[community_df['level'] == level]['community_id']).nunique()} communities")
     print()
 
-    # # Evaluation
-    # mod = leiden_modularity(G, leiden_result)
-    # print(f"Leiden modularity (finest level): {mod:.4f}")
-    # print_community_stats(leiden_result, id_to_node)
+    # Evaluation
+    print_level_evaluations(G, community_df, levels)
 
 if __name__ == "__main__":
     main()

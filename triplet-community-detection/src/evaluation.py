@@ -1,15 +1,32 @@
 from cdlib import evaluation
+from cdlib.classes import NodeClustering
 
-def leiden_modularity(G, communities):
+def compute_modularity(G, communities):
     """
-    Compute modularity for Leiden communities.
+    Compute modularity for a given partition (list of lists of node ids) using Newman-Girvan modularity.
     """
-    return evaluation.modularity(G, communities).score
+    # Wrap in NodeClustering for cdlib evaluation functions
+    comm_obj = NodeClustering(communities, graph=G, method_name="custom")
+    return evaluation.newman_girvan_modularity(G, comm_obj).score
 
-def print_community_stats(communities, id_to_node):
+def compute_conductance(G, communities):
     """
-    Print number of communities and their sizes.
+    Compute mean conductance for a given partition (list of lists of node ids).
     """
-    print(f"Number of communities: {len(communities.communities)}")
-    for i, comm in enumerate(communities.communities):
-        print(f"Community {i}: size={len(comm)} | nodes={[id_to_node[n] for n in comm[:5]]} ...")
+    comm_obj = NodeClustering(communities, graph=G, method_name="custom")
+    return evaluation.conductance(G, comm_obj).score
+
+def print_level_evaluations(G, community_df, levels):
+    """
+    For each level, compute and print modularity and conductance.
+    """
+    for level in levels:
+        # Get partition as list of lists of node ids
+        comms = []
+        for comm_id in community_df[community_df['level'] == level]['community_id'].unique():
+            nodes = community_df[(community_df['level'] == level) & (community_df['community_id'] == comm_id)]['node_id'].tolist()
+            comms.append(nodes)
+        mod = compute_modularity(G, comms)
+        cond = compute_conductance(G, comms)
+        print(f"Level {level}: {len(comms)} communities | Modularity: {mod:.4f} | Mean Conductance: {cond:.4f}")
+    print()
