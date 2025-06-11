@@ -2,7 +2,7 @@ import networkx as nx
 import pandas as pd
 import os
 
-def asyn_lpa_communities(G, output_dir="../data/asyn_lpa"):
+def asyn_lpa_communities(G, triplet_key, output_base="../data/asyn_lpa"):
     """
     Run asynchronous label propagation community detection using networkx.
     Returns:
@@ -10,6 +10,7 @@ def asyn_lpa_communities(G, output_dir="../data/asyn_lpa"):
         parent_df: empty DataFrame (for compatibility)
         levels: list with a single level [0]
     """
+    output_dir = os.path.join(output_base, triplet_key)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     communities = list(nx.algorithms.community.asyn_lpa_communities(G))

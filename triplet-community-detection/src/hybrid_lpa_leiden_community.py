@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from graspologic.partition import hierarchical_leiden
 
-def hybrid_lpa_leiden_communities(G, max_cluster_size=100, random_state=None, output_dir="../data/hybrid_lpa_leiden"):
+def hybrid_lpa_leiden_communities(G, triplet_key, max_cluster_size=100, random_state=None, output_base="../data/hybrid_lpa_leiden"):
     """
     Run LPA to get initial communities, then use as starting_communities for hierarchical_leiden.
     Returns:
@@ -11,6 +11,7 @@ def hybrid_lpa_leiden_communities(G, max_cluster_size=100, random_state=None, ou
         parent_df: DataFrame with columns ['community_id', 'parent_community_id', 'level']
         levels: list of levels
     """
+    output_dir = os.path.join(output_base, triplet_key)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 

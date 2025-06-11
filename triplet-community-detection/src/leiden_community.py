@@ -2,7 +2,7 @@ from cdlib import algorithms
 import pandas as pd
 import os
 
-def leiden_communities(G, output_dir="../data/leiden"):
+def leiden_communities(G, triplet_key, output_base="../data/leiden"):
     """
     Run Leiden community detection using cdlib.
     Returns:
@@ -10,6 +10,7 @@ def leiden_communities(G, output_dir="../data/leiden"):
         parent_df: empty DataFrame (for compatibility)
         levels: list with a single level [0]
     """
+    output_dir = os.path.join(output_base, triplet_key)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     result = algorithms.leiden(G)

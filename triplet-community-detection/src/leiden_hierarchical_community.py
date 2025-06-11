@@ -2,7 +2,7 @@ from graspologic.partition import hierarchical_leiden
 import pandas as pd
 import os
 
-def hierarchical_leiden_communities(G, max_cluster_size=100, random_state=None, resolution=1):
+def hierarchical_leiden_communities(G, triplet_key, max_cluster_size=100, random_state=None, resolution=1, output_base="../data/leiden-hierarchical"):
     """
     Run hierarchical Leiden community detection on a graph.
     Returns:
@@ -10,6 +10,9 @@ def hierarchical_leiden_communities(G, max_cluster_size=100, random_state=None, 
         - parent_mapping: dict[level][community_id] = parent_community_id
         - levels: sorted list of levels
     """
+    output_dir = os.path.join(output_base, triplet_key)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     partitions = hierarchical_leiden(G, max_cluster_size=max_cluster_size, random_seed=random_state, resolution=resolution)
     node_to_community = {}
     parent_mapping = {}
@@ -33,11 +36,11 @@ def hierarchical_leiden_communities(G, max_cluster_size=100, random_state=None, 
             parent_data.append({'community_id': comm_id, 'parent_community_id': parent_comm_id, 'level': level})
 
     community_df = pd.DataFrame(community_data)
-    community_csv_path = os.path.join("..", "data", "leiden-hierarchical", "community_mapping.csv")
+    community_csv_path = os.path.join("..", "data", "leiden-hierarchical", triplet_key, "community_mapping.csv")
     community_df.to_csv(community_csv_path, index=False)
     print(f"Community mapping saved to {community_csv_path}")
     parent_df = pd.DataFrame(parent_data)
-    parent_csv_path = os.path.join("..", "data", "leiden-hierarchical", "parent_mapping.csv")
+    parent_csv_path = os.path.join("..", "data", "leiden-hierarchical", triplet_key, "parent_mapping.csv")
     parent_df.to_csv(parent_csv_path, index=False)
     print(f"Parent mapping saved to {parent_csv_path}")
 

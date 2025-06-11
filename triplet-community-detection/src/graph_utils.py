@@ -2,7 +2,7 @@ import networkx as nx
 import pandas as pd
 import os
 
-def build_graph_from_triplets(triplet_df, directed=False):
+def build_graph_from_triplets(triplet_df, triplet_key, directed=False):
     """
     Build a NetworkX graph from triplet DataFrame.
     Returns:
@@ -20,6 +20,8 @@ def build_graph_from_triplets(triplet_df, directed=False):
         print(f"Loaded {len(node_to_id)} nodes from existing mapping.")
     else: 
         print("Building graph from triplets...")
+        if triplet_key != 'neo4j':
+            raise ValueError(f"triplet_key must be 'neo4j', got {triplet_key} instead.")
 
         nodes = set(triplet_df['subject']).union(set(triplet_df['object']))
         print(f"Found {len(nodes)} unique nodes in triplets.")

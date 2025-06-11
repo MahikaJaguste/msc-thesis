@@ -2,7 +2,7 @@ from cdlib import algorithms
 import pandas as pd
 import os
 
-def louvain_communities(G):
+def louvain_communities(G, triplet_key):
     """
     Run Louvain community detection using cdlib.
     Returns:
@@ -10,7 +10,7 @@ def louvain_communities(G):
         parent_df: empty DataFrame (for compatibility)
         levels: list with a single level [0]
     """
-    output_dir="../data/louvain"
+    output_dir="../data/louvain/" + triplet_key + "/"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
