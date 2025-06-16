@@ -3,3 +3,4 @@ figures/*
 .DS_Store
 triplet-community-detection/data/*
 __pycache__/
+cdlib-trial/data/*
