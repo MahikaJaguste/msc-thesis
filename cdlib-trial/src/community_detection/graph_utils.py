@@ -1,6 +1,8 @@
 import networkx as nx
 from cdlib.utils import nx_node_integer_mapping
 from cdlib import NodeClustering
+import os
+import pandas as pd
 
 def build_graph_from_triplets(df):
     G = nx.Graph()
@@ -29,6 +31,10 @@ def remap_node_communities(community, mapping):
     Returns:
         NodeClustering: New community object with string node labels.
     """
+
+    if not mapping:
+        return community
+
     new_communities = []
     for com in community.communities:
         new_com = [mapping[n] for n in com]
@@ -40,3 +46,4 @@ def remap_node_communities(community, mapping):
         method_name=community.method_name,
         overlap=community.overlap
     )
+

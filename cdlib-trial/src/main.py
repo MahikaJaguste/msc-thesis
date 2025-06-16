@@ -1,52 +1,48 @@
-import os
 import pandas as pd
-from community_detection.io_utils import load_triplets, save_community_result, save_metrics, print_community_summary
-from community_detection.graph_utils import build_graph_from_triplets, remap_graph_for_algorithm, remap_node_communities
-from community_detection.detection import get_algorithms, run_grid_search
-from community_detection.evaluation import evaluate_internal, evaluate_external
+from community_detection.workflow_steps import (
+    workflow_construct_graph,
+    workflow_slpa,
+    workflow_hierarchical_leiden,
+    workflow_slpa_on_leiden_level
+)
 
 def main():
-    triplet_file = "kg_triplets_for_neo4j.csv"  # Replace as needed
-    triplet_key = triplet_file.split("_for_")[1].split(".")[0]  # e.g., 'pub'
-
+    # Example workflow: ["construct_graph", "slpa", "hierarchical_leiden", "slpa_on_leiden_level:0"]
+    workflows = [
+        "construct_graph", 
+        "slpa", 
+        "hierarchical_leiden", 
+        "slpa_on_leiden_level:0"
+    ]
+    triplet_file = "kg_triplets_for_trial.csv"
+    triplet_key = triplet_file.split("_for_")[1].split(".")[0]
+    data_dir = "../data"
+    triplet_path = f"{data_dir}/{triplet_key}/{triplet_file}"
     patient_profiles_file = "../../data/thesis/cll_broad_2022_clinical_data_thesis.csv"
     df = pd.read_csv(patient_profiles_file)
+    label_columns = ['CLL_EPITYPE', 'TUMOR_MOLECULAR_SUBTYPE']
 
-    triplet_path = f"../data/{triplet_key}/{triplet_file}"
-    triplets = load_triplets(triplet_path)
+    G = G_int = mapping = None
 
-    G = build_graph_from_triplets(triplets)
-    G_int, mapping, rev_mapping = remap_graph_for_algorithm(G)
+    for step in workflows:
+        if step == "construct_graph":
+            G, G_int, mapping = workflow_construct_graph(triplet_path, triplet_key, data_dir)
+        elif step == "slpa":
+            if G_int is None:
+                raise ValueError("G_int not constructed yet.")
+            workflow_slpa(G_int, triplet_key, data_dir)
+        elif step == "hierarchical_leiden":
+            if G_int is None or mapping is None:
+                raise ValueError("G_int or mapping not constructed yet.")
+            workflow_hierarchical_leiden(G_int, triplet_key, data_dir, mapping, df, label_columns)
+        elif step.startswith("slpa_on_leiden_level"):
+            if G_int is None:
+                raise ValueError("G_int not constructed yet.")
+            level = int(step.split(":")[1])
+            workflow_slpa_on_leiden_level(G_int, triplet_key, data_dir, level)
+        else:
+            print(f"Unknown workflow step: {step}")
 
-    algorithms_dict = get_algorithms()
-
-    for name, (algo_fn, param_grid) in algorithms_dict.items():
-        print(f"Running: {name}")
-       
-        community = run_grid_search(G_int, algo_fn, param_grid)
-        comm_mapped = remap_node_communities(community, mapping)
-
-        print_community_summary(comm_mapped)
-
-        # Save communities
-        comm_path = f"../data/{triplet_key}/{name}/communities.csv"
-        # save_community_result(comm_mapped, comm_path)
-
-        comm_path = f"../data/{triplet_key}/{name}/communities_int.csv"
-        # save_community_result(community, comm_path)
-       
-        # Internal Evaluation
-        internal_metrics = evaluate_internal(G_int, community)
-        internal_path = f"../data/{triplet_key}/{name}/internal_metrics.csv"
-        save_metrics(internal_metrics, internal_path)
-
-        if community.overlap:
-            print("Overlap detected, skipping external evaluation.")
-            continue
-        # External Evaluation
-        external_metrics = evaluate_external(community, mapping, df, ['CLL_EPITYPE', 'TUMOR_MOLECULAR_SUBTYPE'])
-        external_path = f"../data/{triplet_key}/{name}/external_metrics.csv"
-        save_metrics(external_metrics, external_path)
 
 if __name__ == "__main__":
     main()
