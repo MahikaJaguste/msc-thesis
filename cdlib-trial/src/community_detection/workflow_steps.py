@@ -53,6 +53,9 @@ def workflow_hierarchical_leiden(G_int, triplet_key, data_dir, mapping, df, labe
     if os.path.exists(metrics_path):
         print("Hierarchical Leiden metrics already exist, skipping.")
         return
+    
+    parents_path = os.path.join(out_dir, "parents.csv")
+    parents_df = []
     partitions = hierarchical_leiden(G_int, max_cluster_size=100, random_seed=42)
     level_to_communities = {}
     for part in partitions:
@@ -64,6 +67,13 @@ def workflow_hierarchical_leiden(G_int, triplet_key, data_dir, mapping, df, labe
         if comm_id not in level_to_communities[level]:
             level_to_communities[level][comm_id] = []
         level_to_communities[level][comm_id].append(node)
+        parent_id = part.parent_cluster if part.parent_cluster is not None else -1
+        parents_df.append({
+            "community_id": comm_id,
+            "parent_community_id": parent_id,
+            "level": level
+        })
+    pd.DataFrame(parents_df).to_csv(parents_path, index=False)
     metrics_rows = []
     for level in sorted(level_to_communities.keys()):
         comms = list(level_to_communities[level].values())

@@ -14,7 +14,7 @@ def main():
         "hierarchical_leiden", 
         "slpa_on_leiden_level:0"
     ]
-    triplet_file = "kg_triplets_for_trial.csv"
+    triplet_file = "kg_triplets_for_neo4j.csv"
     triplet_key = triplet_file.split("_for_")[1].split(".")[0]
     data_dir = "../data"
     triplet_path = f"{data_dir}/{triplet_key}/{triplet_file}"
