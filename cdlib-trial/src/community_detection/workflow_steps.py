@@ -40,6 +40,7 @@ def workflow_slpa(G_int, triplet_key, data_dir):
     if os.path.exists(metrics_path):
         print("SLPA metrics already exist, skipping evaluation.")
         return
+    community.overlap = True
     metrics = evaluate_internal(G_int, community)
     metrics["algo"] = algo
     save_metrics(metrics, metrics_path)

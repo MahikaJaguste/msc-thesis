@@ -1,17 +1,24 @@
 from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
-from cdlib.evaluation import newman_girvan_modularity, modularity_overlap, conductance
+from cdlib.evaluation import newman_girvan_modularity, modularity_overlap, conductance, erdos_renyi_modularity
 
 import networkx as nx
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def evaluate_internal(G, community):
-    mod = newman_girvan_modularity(G, community).score
-    print(f"Modularity: {mod:.4f}")
+    newman_girvan_mod = None
+    erdos_renyi_mod = None
+    overlapping_mod = None
 
-    if community.overlap:
+    if not community.overlap:
+        newman_girvan_mod = newman_girvan_modularity(G, community).score
+        print(f"Newman-Girvan Modularity: {newman_girvan_mod:.4f}")
+
+        erdos_renyi_mod = erdos_renyi_modularity(G, community).score
+        print(f"Erdos-Renyi Modularity: {erdos_renyi_mod:.4f}")
+    else:
         overlapping_mod = modularity_overlap(G, community).score
         print(f"Overlapping Modularity: {overlapping_mod:.4f}")
-        shen_overlapping_mod = 0 # shen_overlapping_modularity(G, community.communities)
+        
 
     cond = conductance(G, community).score
     print(f"Conductance: {cond:.4f}")
@@ -25,10 +32,10 @@ def evaluate_internal(G, community):
     num_nodes_in_communities = len(nodes_set_in_communities)
 
     return {
-        'modularity': mod, 
+        'newman_girvan_modularity': newman_girvan_mod,
+        'erdos_renyi_modularity': erdos_renyi_mod,
+        'overlapping_modularity': overlapping_mod,
         'conductance': cond, 
-        'overlapping_modularity': overlapping_mod if community.overlap else None, 
-        'shen_overlapping_modularity': shen_overlapping_mod if community.overlap else None,
         'num_communities': num_communities,
         'avg_size': avg_size,
         'max_size': max_size,
@@ -62,51 +69,40 @@ def evaluate_external(community, mapping, df, label_columns):
     return results
 
 
-
-def _community_modularity(args):
-    idx, comm, G, node_alpha, m = args
-    comm_set = set(comm)
-    Q_c = 0.0
-    for i in comm_set:
-        for j in comm_set:
-            A_ij = 1 if G.has_edge(i, j) else 0
-            k_i = G.degree(i)
-            k_j = G.degree(j)
-            alpha_i = node_alpha.get((i, idx), 0)
-            alpha_j = node_alpha.get((j, idx), 0)
-            Q_c += (A_ij - (k_i * k_j) / (2 * m)) * alpha_i * alpha_j
-    return Q_c
-
-def shen_overlapping_modularity(G, communities, n_jobs=4):
+    """
+    Compute overlapping modularity for a list of communities.
+    Each node's contribution to a community is 1/(number of communities it belongs to).
+    communities: list of lists of node ids (overlapping allowed)
+    """
     m = G.number_of_edges()
     if m == 0:
-        print("Graph has no edges. Modularity is 0.")
         return 0.0
 
-    print(f"Preparing node-community memberships for {len(communities)} communities...")
+    # 1. Build node -> set of communities mapping
     node_to_comms = {}
     for idx, comm in enumerate(communities):
         for node in comm:
             node_to_comms.setdefault(node, set()).add(idx)
+    print("Node to communities mapping done.")
 
+    # 2. Precompute alpha for each node in each community
     node_alpha = {}
     for node, comms in node_to_comms.items():
         for comm in comms:
             node_alpha[(node, comm)] = 1.0 / len(comms)
-
-    args = [(idx, comm, G, node_alpha, m) for idx, comm in enumerate(communities)]
+    print("Node alpha values computed.")
 
     Q = 0.0
-    total = len(args)
-    print(f"Starting parallel modularity computation for {total} communities...")
-    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
-        futures = {executor.submit(_community_modularity, arg): i for i, arg in enumerate(args)}
-        for count, future in enumerate(as_completed(futures), 1):
-            idx, Q_c = future.result()
-            Q += Q_c
-            if count % 10 == 0 or count == total:
-                print(f"Processed {count}/{total} communities...")
+    for idx, comm in enumerate(communities):
+        comm_set = set(comm)
+        for i in comm_set:
+            for j in comm_set:
+                A_ij = 1 if G.has_edge(i, j) else 0
+                k_i = G.degree(i)
+                k_j = G.degree(j)
+                alpha_i = node_alpha.get((i, idx), 0)
+                alpha_j = node_alpha.get((j, idx), 0)
+                Q += (A_ij - (k_i * k_j) / (2 * m)) * alpha_i * alpha_j
 
     Q = Q / (2 * m)
-    print(f"Final overlapping modularity: {Q:.6f}")
     return Q
