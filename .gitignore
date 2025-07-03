@@ -4,3 +4,4 @@ figures/*
 triplet-community-detection/data/*
 __pycache__/
 cdlib-trial/data/*
+patient_community_project/data/*
