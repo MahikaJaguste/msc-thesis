@@ -57,7 +57,7 @@ for comm_nodes in slpa_communities:
 # Save merged community assignments
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 community_df = pd.DataFrame(community_data)
-community_df.to_csv(os.path.join(OUTPUT_DIR, "communities_assignment.csv"), index=False)
+community_df.to_csv(os.path.join(OUTPUT_DIR, "community_assignments.csv"), index=False)
 
 # Compute and print metrics
 clustering = NodeClustering(communities=all_leiden_communities, graph=G, method_name="reverse_hybrid_leiden")
