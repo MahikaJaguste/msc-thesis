@@ -3,8 +3,8 @@ import subprocess
 # Define the list of scripts to run in order
 scripts = [
     # "scripts/build_graph.py",
-    "scripts/run_leiden.py",
-    "scripts/run_w_slpa.py",
+    # "scripts/run_leiden.py",
+    # "scripts/run_w_slpa.py",
     "scripts/run_reverse_hybrid.py",
 
     # "scripts/run_slpa.py",

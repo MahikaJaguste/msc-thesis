@@ -34,7 +34,9 @@ all_leiden_communities = []
 community_counter = 0
 community_data = []
 
+index = 0
 for comm_nodes in slpa_communities:
+    print(f"Processing SLPA community {index}/{len(slpa_communities)} with {len(comm_nodes)} nodes")
     subgraph = G.subgraph(comm_nodes).copy()
     if subgraph.number_of_nodes() == 0:
         continue
@@ -53,6 +55,8 @@ for comm_nodes in slpa_communities:
                 "communityId": community_counter
             })
         community_counter += 1
+    index += 1
+    print("Leiden communities found:", len(comm_map))
 
 # Save merged community assignments
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -69,12 +73,14 @@ num_communities = len(all_leiden_communities)
 avg_size = sum(len(c) for c in all_leiden_communities) / num_communities
 min_size = min(len(c) for c in all_leiden_communities)
 max_size = max(len(c) for c in all_leiden_communities)
+num_nodes_in_communities = len(set(node for comm in all_leiden_communities for node in comm))
 
 print(f"Reverse Hybrid Leiden Community Detection Summary:")
 print(f"Number of communities: {num_communities}")
 print(f"Average community size: {avg_size:.2f}")
 print(f"Min community size: {min_size}")
 print(f"Max community size: {max_size}")
+print(f"Number of nodes in communities: {num_nodes_in_communities}")
 print(f"Modularity: {mod:.4f}")
 print(f"Overlapping Modularity: {overlapping_mod:.4f}")
 print(f"Conductance: {cond:.4f}")
@@ -87,6 +93,7 @@ metrics_df = pd.DataFrame([{
     'num_communities': num_communities,
     'avg_community_size': avg_size,
     'min_community_size': min_size,
-    'max_community_size': max_size
+    'max_community_size': max_size,
+    'num_nodes_in_communities': num_nodes_in_communities
 }])
 metrics_df.to_csv(os.path.join(OUTPUT_DIR, "metrics.csv"), index=False)
