@@ -5,7 +5,12 @@ scripts = [
     # "scripts/build_graph.py",
     # "scripts/run_leiden.py",
     # "scripts/run_w_slpa.py",
-    "scripts/run_reverse_hybrid.py",
+    # "scripts/run_reverse_hybrid.py",
+
+    # 'scripts/build_graph_nodes.py',
+    # 'scripts/build_graph_edges.py',
+    # 'scripts/build_graph_noise.py',
+    'scripts/run_perturbation.py',
 
     # "scripts/run_slpa.py",
     # "scripts/run_hybrid.py",
