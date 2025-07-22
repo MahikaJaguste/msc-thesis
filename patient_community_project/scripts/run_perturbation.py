@@ -3,7 +3,13 @@ import random
 import pandas as pd
 import networkx as nx
 from collections import defaultdict
-from cdlib import evaluation
+from cdlib.evaluation import (
+    normalized_mutual_information,
+    adjusted_rand_index,
+    overlapping_normalized_mutual_information_LFK,
+    overlapping_normalized_mutual_information_MGH,
+    omega
+)
 from cdlib import NodeClustering
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 from itertools import combinations
@@ -60,6 +66,18 @@ def weighted_slpa(graph, t=20, r=0.1, seed=None):
 
     return list(communities.values())
 
+
+def make_disjoint_clustering(membership_dict):
+    disjoint_communities = defaultdict(list)
+    assigned_nodes = set()
+    for comm_id in sorted(set(c for comms in membership_dict.values() for c in comms)):
+        for node, comms in membership_dict.items():
+            if node not in assigned_nodes and comm_id in comms:
+                disjoint_communities[comm_id].append(node)
+                assigned_nodes.add(node)
+    return list(disjoint_communities.values())
+
+
 # Load baseline community assignments
 baseline_df = pd.read_csv(os.path.join(og_output_dir, "community_assignments.csv"))
 baseline_membership = defaultdict(set)
@@ -95,51 +113,66 @@ for seed in seeds:
 
     # Determine nodes to evaluate
     if PERTURBATION_MODE == "node":
-        all_nodes = sorted(set(baseline_membership.keys()) & set(run_membership.keys()) & set(G.nodes()))
+        valid_nodes = set(G.nodes())
+        filtered_baseline_membership = defaultdict(set)
+        for node in valid_nodes:
+            if node in baseline_membership:
+                filtered_baseline_membership[node] = baseline_membership[node]
     else:
-        all_nodes = sorted(set(baseline_membership.keys()) & set(run_membership.keys()))
+        filtered_baseline_membership = baseline_membership
 
-    baseline_labels = [sorted(baseline_membership[n])[0] if baseline_membership[n] else -1 for n in all_nodes]
-    run_labels = [sorted(run_membership[n])[0] if run_membership[n] else -1 for n in all_nodes]
+    # Convert filtered baseline membership to NodeClustering
+    baseline_communities = defaultdict(list)
+    for node, comms in filtered_baseline_membership.items():
+        for comm in comms:
+            baseline_communities[comm].append(node)
+    baseline_clustering = NodeClustering(
+        communities=list(baseline_communities.values()),
+        graph=G,
+        method_name="baseline",
+        overlap=True
+    )
 
-    ari = adjusted_rand_score(baseline_labels, run_labels)
-    nmi = normalized_mutual_info_score(baseline_labels, run_labels)
 
-    # Jaccard similarity for overlapping sets
-    jaccard_scores = []
-    for node in all_nodes:
-        a = baseline_membership[node]
-        b = run_membership[node]
-        intersection = len(a & b)
-        union = len(a | b)
-        jaccard_scores.append(intersection / union if union > 0 else 0)
-    avg_jaccard = sum(jaccard_scores) / len(jaccard_scores)
+    # Disjoint baseline clustering
+    disjoint_baseline_comms = make_disjoint_clustering(filtered_baseline_membership)
+    disjoint_baseline_clustering = NodeClustering(
+        communities=disjoint_baseline_comms,
+        graph=G,
+        method_name="baseline_disjoint",
+        overlap=False
+    )
 
-    # Omega Index
-    def omega_index(m1, m2):
-        agree = 0
-        total = 0
-        for u, v in combinations(all_nodes, 2):
-            same1 = len(m1[u] & m1[v]) > 0
-            same2 = len(m2[u] & m2[v]) > 0
-            if same1 == same2:
-                agree += 1
-            total += 1
-        return agree / total if total > 0 else 0
+    # Disjoint run clustering
+    disjoint_run_comms = make_disjoint_clustering(run_membership)
+    disjoint_run_clustering = NodeClustering(
+        communities=disjoint_run_comms,
+        graph=G,
+        method_name="run_disjoint",
+        overlap=False
+    )
 
-    omega = omega_index(baseline_membership, run_membership)
 
-    # Percentage of nodes that changed communities
-    changed = sum(1 for n in all_nodes if baseline_membership[n] != run_membership[n])
-    pct_changed = changed / len(all_nodes) * 100
+    # Compute CDlib metrics
+    ari = adjusted_rand_index(disjoint_run_clustering, disjoint_baseline_clustering).score
+    nmi = normalized_mutual_information(disjoint_run_clustering, disjoint_baseline_clustering).score
+    onmi_lfk = overlapping_normalized_mutual_information_LFK(clustering, baseline_clustering).score
+    onmi_mgh = overlapping_normalized_mutual_information_MGH(clustering, baseline_clustering).score
+    omega_index = omega(clustering, baseline_clustering).score
+
+    # # Percentage of nodes that changed communities
+    # changed = sum(1 for n in all_nodes if baseline_membership[n] != run_membership[n])
+    # pct_changed = changed / len(all_nodes) * 100
 
     results.append({
         "seed": seed,
         "adjusted_rand_index": ari,
         "normalized_mutual_info": nmi,
-        "avg_jaccard_similarity": avg_jaccard,
-        "omega_index": omega,
-        "percent_nodes_changed": pct_changed
+        "omega_index": omega_index,
+        "onmi_lfk": onmi_lfk,
+        "onmi": onmi_mgh,
+        # "percent_nodes_changed": pct_changed,
+        "omega_index": omega_index,
     })
 
 # Save results
