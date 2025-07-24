@@ -34,6 +34,22 @@ all_leiden_communities = []
 community_counter = 0
 community_data = []
 
+
+# Predefined mapping from community sizes to community IDs
+# size_to_commid = {
+#     156: 0,
+#     50: 1,
+#     80: 2,
+#     29: 3,
+#     37: 4,
+#     117: 5,
+#     104: 6,
+#     110: 7,
+#     231: 8,
+#     148: 9
+# }
+
+
 index = 0
 for comm_nodes in slpa_communities:
     print(f"Processing SLPA community {index}/{len(slpa_communities)} with {len(comm_nodes)} nodes")
@@ -48,12 +64,22 @@ for comm_nodes in slpa_communities:
         comm_map.setdefault(comm, []).append(node)
     for comm_nodes_list in comm_map.values():
         all_leiden_communities.append(comm_nodes_list)
+        
+        # comm_size = len(comm_nodes_list)
+        # if comm_size in size_to_commid:
+        #             community_id = size_to_commid[comm_size]
+        # else:
+        #     community_id = f"unmapped_{comm_size}"
+
         for node in comm_nodes_list:
             community_data.append({
                 "nodeId": node,
                 "patientId": nodeid_to_patientid.get(node, node),
+                # "communityId": community_id
                 "communityId": community_counter
             })
+        # print(community_id, ": ", len(comm_nodes_list))
+        print(community_counter, ": ", len(comm_nodes_list))
         community_counter += 1
     index += 1
     print("Leiden communities found:", len(comm_map))
